@@ -1,0 +1,13 @@
+{
+  "name": "discord.js-doot",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/mstrodl/discord.js-doot",
+  "author": "heatingdevice",
+  "license": "MIT",
+  "dependencies": {
+    "discord.js": "hydrabolt/discord.js",
+    "docstring": "^1.1.0",
+    "fs-extra": "^4.0.2"
+  }
+}
