@@ -1,6 +1,6 @@
 let Discord = require("../../index.js")
 let bot = new Discord.Client({
-  commandPath: "/Users/matthew/discord.js-commander/examples/pingbot/ext",
+  commandPath: `${__dirname}/ext`,
   prefix: "gay",
   admins: ["196769986071625728"]
 })
