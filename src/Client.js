@@ -13,8 +13,93 @@ class CommandClient extends Discord.Client {
     this.loadCommands()
     this.on("message", this.parseMessage.bind(this))
   }
+  parseArgs(text) {
+    // Strip extra spaces.
+    text = text.trim()
+    
+    let buffer = ""
+    let parts = []
+    let position = 0
+    
+    // Loop through all text.
+    while (position !== text.length) {
+      // Character at current position.
+      let current = text[position]
+      
+      // Quote character?
+      if (current === "\"") {
+        position++ // Skip the initial "
+        
+        // buffer that we will be using to store what's in between the quotes.
+        let quoteBuffer = ""
+        
+        // While we don't hit a "
+        while (text[position] !== "\"") {
+          // Add current character to buffer.
+          quoteBuffer += text[position]
+          
+          // Move up.
+          position++
+          
+          // We hit the end of the string, no question mark still. Parsing error!
+          if (position === text.length) {
+            return false
+          }
+        }
+        
+        // Add to list of parts.
+        parts.push(quoteBuffer)
+
+        // Clean up.
+        quoteBuffer = ""
+        buffer = ""
+        
+        // Skip ending "
+        position++
+        
+        // If we're not at the end and there's no space, complain.
+        if (position !== text.length && text[position] !== " ") {
+          return false
+        }
+        
+        // Skip space if there is one.
+        if (text[position] === ' ') {
+        position++
+        }
+        
+        // Move on.
+        continue
+      }
+      
+      // We hit a space.
+      if (current === " " && buffer.length) {
+        // Push what's in the buffer.
+        parts.push(buffer)
+        
+        // Empty the buffer.
+        buffer = ""
+        
+        // Skip the space.
+        position++
+        
+        continue
+    }
+      
+      // Gonna hit last character, push whatever we have and return.
+      if (position === text.length - 1) {
+        parts.push((buffer.trim().length ? buffer : "") + current)
+        return parts
+      }
+      
+      // Add to word buffer and move on.
+      buffer += current
+      position++
+    }
+    
+    return parts
+  }
   async parseMessage(msg) {
-    let args = msg.content.split(" ")
+    let args = this.parseArgs(msg.content) || msg.content.split(" ")
     let cmdName = args.shift()
     if(!cmdName.startsWith(this.prefix)) return false
     cmdName = cmdName.substring(this.prefix.length)
@@ -68,7 +153,8 @@ class CommandClient extends Discord.Client {
       let cogCmds = Object.getOwnPropertyNames(requiredCog.prototype)
       for(let methodName of cogCmds) {
         if(methodName == "constructor") continue
-        let cmd = requiredCog.prototype[methodName]
+        let cmd = cog[methodName]
+        if(!(cmd instanceof Function)) continue 
         let cmdObj = parseDocstring(cmd)
         cmdObj.exec = cmd.bind(cog)
         cmdObj.cog = requiredCog
@@ -83,6 +169,7 @@ class CommandClient extends Discord.Client {
 
 
 function parseDocstring(func) {
+  if(!func || !func.toString) return {}
   let comment = func.toString()
   let doc = ""
   let match = comment.match(/\/\*[!*]([\s\S]*?)\*\//)
